@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>維尼消消樂 - 皮卡丘彩虹版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error("Game Error:", message, "Line:", lineno);
+        };
+    </script>
+    <style>
+        /* 引進圓潤可愛的字體 */
+        @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+
+        body {
+            font-family: 'M PLUS Rounded 1c', 'Noto Sans TC', sans-serif; /* 套用圓體 */
+            touch-action: manipulation;
+            background-color: #FFF8E1;
+            background-image: radial-gradient(#FFE082 2px, transparent 2px);
+            background-size: 20px 20px;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            overflow: hidden;
+            height: 100dvh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.5s;
+        }
+
+        /* 標題專用樣式 - 蜂蜜布丁風格 */
+        .cute-title {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            color: #FCD34D; /* 柔和的蜂蜜黃 */
+            -webkit-text-stroke: 3px #8B4513; /* 巧克力棕色描邊 */
+            text-shadow: 4px 4px 0px #D97706; /* 焦糖色陰影 */
+            paint-order: stroke fill;
+            letter-spacing: 0.1em;
+        }
+
+        .title-bounce { animation: bounce-slow 2s infinite; }
+        @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        .main-layout { display: flex; flex-direction: column; width: 100%; height: 100%; max-width: 500px; padding: 10px; box-sizing: border-box; }
+        .board-area { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 10px 0; }
+        .grid-board { width: 100%; height: auto; aspect-ratio: 1 / 1; max-height: 100%; max-width: 100%; display: grid; grid-template-columns: repeat(8, 1fr); gap: 0; background-color: #FEF9C3; padding: 4px; border-radius: 12px; border: 4px solid #FDE047; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); position: relative; touch-action: none; }
+        #floatingLayer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 8px; }
+
+        .grid-cell { transition: background-color 0.1s, filter 0.1s; cursor: grab; border-radius: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05), inset 0 -3px 0 rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; position: relative; padding: 5%; overflow: hidden; aspect-ratio: 1; will-change: background-color, filter; }
+        
+        .layer-ice { background-color: #E0F2FE !important; background-image: linear-gradient(45deg, rgba(255,255,255,0.8) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.8) 75%, transparent 75%, transparent); background-size: 10px 10px; box-shadow: inset 0 0 0 2px #7DD3FC, inset 0 0 10px #BAE6FD !important; }
+        .layer-chain::after { content: ''; position: absolute; inset: 0; background-image: repeating-linear-gradient(45deg, #71717a 0, #71717a 4px, transparent 4px, transparent 8px), repeating-linear-gradient(-45deg, #71717a 0, #71717a 4px, transparent 4px, transparent 8px); opacity: 0.6; border: 3px solid #52525B; z-index: 5; pointer-events: none; }
+        .honey-layer { background-image: radial-gradient(rgba(255, 255, 255, 0.4) 2px, transparent 2px); background-size: 8px 8px; box-shadow: inset 0 0 15px rgba(245, 158, 11, 0.6), inset 0 0 0 2px #D97706 !important; }
+        
+        .grid-cell:active { filter: brightness(90%); cursor: grabbing; z-index: 20; }
+        .character-content { width: 90%; height: 90%; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1)); pointer-events: none; object-fit: contain; display: block; animation: fadeIn 0.2s ease-out; position: relative; z-index: 1; }
+        
+        .star-icon { font-size: 1.2rem; color: #D1D5DB; transition: color 0.3s, transform 0.3s; }
+        .star-active { color: #FBBF24; transform: scale(1.2); text-shadow: 0 0 5px rgba(251, 191, 36, 0.5); }
+        
+        .special-h::before { content: ''; position: absolute; width: 100%; height: 4px; background: rgba(255,255,255,0.8); z-index: 2; top: 50%; transform: translateY(-50%); box-shadow: 0 0 5px white; }
+        .special-v::before { content: ''; position: absolute; height: 100%; width: 4px; background: rgba(255,255,255,0.8); z-index: 2; left: 50%; transform: translateX(-50%); box-shadow: 0 0 5px white; }
+        .special-b::before { content: '💣'; position: absolute; font-size: 1.2rem; z-index: 3; bottom: 0; right: 0; filter: drop-shadow(0 0 2px black); animation: pulse 1s infinite; }
+        
+        /* 彩虹罐特殊樣式 - 分離旋轉動畫與掉落動畫 */
+        .rainbow-spinner {
+            width: 100%;
+            height: 100%;
+            background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+            animation: spin-slow 4s linear infinite;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255,255,255,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .special-r { 
+            background: transparent !important; 
+            box-shadow: none !important;
+            animation: none !important; /* 確保父層不旋轉 */
+            padding: 2% !important; /* 微調內縮 */
+        }
+        .special-r .character-content { filter: none !important; width: 80% !important; height: 80% !important; } /* 保持圖片原色並調整大小以適應圓圈 */
+
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        @keyframes spin-slow { 100% { transform: rotate(360deg); } }
+
+        .bg-pooh { background-color: #FEF08A; } .bg-piglet { background-color: #FBCFE8; } .bg-tigger { background-color: #FED7AA; } .bg-eeyore { background-color: #CBD5E1; } .bg-rabbit { background-color: #ECFCCB; } .bg-honey { background-color: #FDE68A; }
+        .selected { filter: brightness(110%); box-shadow: inset 0 0 0 4px #FF6B6B, inset 0 -3px 0 rgba(0,0,0,0.1) !important; z-index: 10; }
+        .hint-highlight { animation: hintPulse 0.8s infinite; box-shadow: inset 0 0 0 4px #2196F3, inset 0 -3px 0 rgba(0,0,0,0.1) !important; z-index: 20; }
+        .crushed { animation: popOut 0.3s ease-out forwards; background-color: #FFF !important; }
+        .dropping { animation: dropIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .animate-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        .floating-score { position: absolute; color: #FF5252; font-weight: 900; font-size: clamp(1rem, 4vw, 1.5rem); text-shadow: 2px 2px 0 #FFF, -1px -1px 0 #FFF, 1px -1px 0 #FFF, -1px 1px 0 #FFF, 1px 1px 0 #FFF; pointer-events: none; z-index: 50; animation: floatUp 0.8s ease-out forwards; white-space: nowrap; }
+        .combo-text { color: #9C27B0 !important; font-size: clamp(1.2rem, 5vw, 1.8rem) !important; z-index: 60 !important; animation: floatUpBig 1s ease-out forwards !important; }
+
+        @keyframes floatUp { 0% { transform: translate(-50%, -50%) translateY(0); opacity: 1; } 100% { transform: translate(-50%, -50%) translateY(-40px); opacity: 0; } }
+        @keyframes floatUpBig { 0% { transform: translate(-50%, -50%) translateY(0); opacity: 1; } 50% { transform: translate(-50%, -50%) translateY(-30px) scale(1.5); opacity: 1; } 100% { transform: translate(-50%, -50%) translateY(-60px); opacity: 0; } }
+        @keyframes hintPulse { 0% { transform: scale(1); filter: brightness(100%); } 50% { transform: scale(1.05); filter: brightness(120%); } 100% { transform: scale(1); filter: brightness(100%); } }
+        @keyframes popOut { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(0); opacity: 0; } }
+        @keyframes dropIn { from { transform: translateY(-40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+
+        @keyframes urgencyLock { 0% { background-color: #FFF8E1; } 30% { background-color: #FECACA; } 60% { background-color: #FFF8E1; } 100% { background-color: #FECACA; } }
+        .urgency-bg { animation: urgencyLock 1.2s ease-in-out forwards !important; }
+        .urgency-text { color: #DC2626 !important; transform: scale(1.4); text-shadow: 0 0 10px rgba(220, 38, 38, 0.5); transition: all 0.3s; }
+
+        .modal { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px); }
+        .bot-active { box-shadow: 0 0 0 4px #4CAF50, 0 0 15px #4CAF50 !important; }
+        .progress-bar { transition: width 0.3s ease-out; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+        .allow-scroll { touch-action: pan-y !important; -webkit-overflow-scrolling: touch; }
+        
+        .main-image-container {
+            width: 150px; height: 150px; border-radius: 50%; border: 6px solid #FCD34D; background-color: #FFF; overflow: hidden; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: flex; justify-content: center; align-items: center;
+        }
+        .main-image-content { width: 100%; height: 100%; object-fit: cover; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <!-- 音效播放器 -->
+    <audio id="bgmAudio" loop hidden></audio>
+
+    <!-- 主畫面 (Main Menu) -->
+    <div id="mainMenu" class="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#FFF8E1] w-full h-full">
+        <div id="mainMenuImageContainer" class="main-image-container title-bounce">
+            <div id="defaultMainImage" class="w-full h-full">
+                <img src="https://github.com/SHW-coder/WinnePIC/blob/main/winnie_main.jpg?raw=true" class="w-full h-full object-cover" alt="Default Winnie">
+            </div>
+        </div>
+
+        <div class="text-center mb-8">
+            <!-- 修正：使用自定義的 cute-title class，顏色更柔和 -->
+            <h1 class="text-6xl font-black mb-2 cute-title">維尼<br>消消樂</h1>
+            <p class="text-yellow-800 font-bold text-lg mt-3 font-rounded">Winnie Match</p>
+        </div>
+        
+        <div class="flex flex-col gap-4 w-64">
+            <button onclick="enterNormalMode()" class="w-full bg-green-500 hover:bg-green-600 text-white text-xl font-bold py-4 rounded-2xl shadow-lg transform transition active:scale-95 flex items-center justify-center gap-2 font-rounded">
+                <span>🌲</span> 一般模式
+            </button>
+            <button onclick="enterTimeMode()" class="w-full bg-orange-500 hover:bg-orange-600 text-white text-xl font-bold py-4 rounded-2xl shadow-lg transform transition active:scale-95 flex items-center justify-center gap-2 font-rounded">
+                <span>🔥</span> 限時模式
+            </button>
+             <button onclick="openSettings()" class="w-full bg-blue-500 hover:bg-blue-600 text-white text-xl font-bold py-4 rounded-2xl shadow-lg transform transition active:scale-95 flex items-center justify-center gap-2 font-rounded">
+                <span>⚙️</span> 設定
+            </button>
+        </div>
+
+        <div class="mt-8 text-sm text-gray-400">
+            Design by Gemini AI
+        </div>
+    </div>
+
+    <!-- 遊戲畫面 -->
+    <div id="gameScreen" class="main-layout hidden">
+        <div class="flex justify-between items-center mb-2 shrink-0">
+            <button onclick="activateAutoWin()" id="autoWinBtn" class="bg-gray-800 text-white text-xs font-bold py-1 px-3 rounded-full shadow border-2 border-gray-600 transition-all active:scale-95 flex items-center gap-1">
+                🤖 自動
+            </button>
+            <div class="text-center">
+                <h1 class="text-xl font-bold text-yellow-600 tracking-widest drop-shadow-sm">百畝森林</h1>
+                <div class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-bold shadow-sm border border-yellow-300 inline-block">
+                    Lv.<span id="levelDisplay">1</span>
+                </div>
+            </div>
+            <button onclick="openHelp()" class="bg-white text-yellow-600 text-xs font-bold py-1 px-3 rounded-full shadow border-2 border-yellow-300 active:scale-95">
+                ❓ 說明
+            </button>
+        </div>
+
+        <div class="flex justify-center gap-2 mb-1 shrink-0">
+            <span id="star1" class="star-icon">★</span>
+            <span id="star2" class="star-icon">★</span>
+            <span id="star3" class="star-icon">★</span>
+        </div>
+
+        <div class="w-full h-3 bg-gray-200 rounded-full overflow-hidden border border-gray-300 relative shrink-0 mb-2">
+            <div id="scoreProgress" class="progress-bar h-full bg-green-400 w-0"></div>
+            <div class="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-gray-600 drop-shadow-md text-white">
+                目標: <span id="targetDisplay">1000</span>
+            </div>
+        </div>
+
+        <div class="flex justify-between gap-2 mb-1 shrink-0">
+            <div class="bg-white flex-1 py-1 px-2 rounded-xl shadow border border-yellow-200 flex flex-col items-center">
+                <span class="text-[10px] text-gray-400 font-bold">分數 (最高: <span id="bestScore">0</span>)</span>
+                <span id="score" class="text-lg font-black text-yellow-500 leading-none">0</span>
+            </div>
+            <div class="bg-white flex-1 py-1 px-2 rounded-xl shadow border border-red-200 flex flex-col items-center">
+                <span id="movesLabel" class="text-[10px] text-gray-400 font-bold">步數</span>
+                <span id="moves" class="text-lg font-black text-red-500 leading-none transition-all duration-300">20</span>
+            </div>
+        </div>
+
+        <div class="board-area">
+            <div id="grid" class="grid-board"></div>
+            <div id="floatingLayer"></div>
+        </div>
+
+        <div class="flex gap-2 justify-center w-full shrink-0 mt-1">
+            <button id="hintBtn" onclick="useHint()" class="flex-1 bg-purple-500 text-white font-bold py-2 px-2 rounded-xl shadow-lg transform transition active:scale-95 flex items-center justify-center gap-1 text-sm">
+                <span>💡</span> 提示 (<span id="hintCount">3</span>)
+            </button>
+            <button onclick="openSettings()" class="flex-1 bg-blue-500 text-white font-bold py-2 px-2 rounded-xl shadow-lg transform transition active:scale-95 flex items-center justify-center gap-1 text-sm">
+                <span>⚙️</span> 設定
+            </button>
+            <button id="restartBtn" onclick="restartLevel()" class="flex-1 bg-gray-500 text-white font-bold py-2 px-2 rounded-xl shadow-lg transform transition active:scale-95 flex items-center justify-center gap-1 text-sm">
+                <span>🔄</span> 重玩本關
+            </button>
+        </div>
+    </div>
+
+    <!-- 提示確認視窗 -->
+    <div id="hintModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="modal p-6 rounded-3xl w-full max-w-xs border-4 border-purple-300 bg-white">
+            <h2 id="hintModalTitle" class="text-xl font-bold text-center mb-4 text-purple-600">提示</h2>
+            <p id="hintModalMessage" class="text-sm text-gray-700 mb-6 text-center whitespace-pre-line"></p>
+            <div id="hintModalButtons" class="flex gap-2 justify-center"></div>
+        </div>
+    </div>
+
+    <!-- 系統訊息視窗 -->
+    <div id="systemModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="modal p-6 rounded-3xl w-full max-w-xs border-4 border-blue-300 bg-white shadow-2xl">
+            <h2 class="text-xl font-bold text-center mb-4 text-gray-700">訊息</h2>
+            <p id="systemModalMessage" class="text-sm text-gray-600 mb-6 text-center"></p>
+            <div id="systemModalButtons" class="flex gap-2 justify-center"></div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="helpModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="modal p-6 rounded-3xl w-full max-w-xs border-4 border-yellow-300 bg-white relative max-h-[85dvh] flex flex-col shadow-2xl">
+            <button onclick="closeHelp()" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center z-10">&times;</button>
+            <div id="helpSimple" class="flex flex-col h-full overflow-hidden">
+                <h2 class="text-xl font-bold text-center mb-4 text-yellow-600 flex-shrink-0 mt-2">遊戲說明</h2>
+                <div class="space-y-4 text-sm text-gray-700 mb-2 overflow-y-auto flex-1 px-1 custom-scrollbar allow-scroll">
+                    <p>👉 <b>基本玩法：</b><br>滑動交換方塊，3 個相同圖案連線即可消除得分。</p>
+                    <div class="p-2 bg-orange-100 rounded-lg border border-orange-300 mb-2">
+                         <p class="font-bold text-orange-600">🔥 限時模式：</p>
+                         <p class="text-xs">在主選單選擇。60秒無限步數，挑戰最高分！</p>
+                    </div>
+                    <div class="p-3 bg-yellow-50 rounded-xl border border-yellow-200 shadow-sm">
+                        <p class="font-bold text-red-500 mb-2 border-b border-red-100 pb-1">✨ 特殊道具：</p>
+                        <ul class="list-disc pl-4 space-y-1 text-xs">
+                            <li>🚀 <b>火箭</b>：消除整行或整列。</li>
+                            <li>💣 <b>炸彈小麻糬</b>：炸掉周圍九宮格。</li>
+                            <li>🌈 <b>彩虹皮卡丘</b>：消除場上某種顏色的所有方塊。</li>
+                        </ul>
+                    </div>
+                    <div class="h-2"></div>
+                </div>
+                <div class="flex-shrink-0 space-y-2 pt-2 border-t border-gray-100">
+                    <button onclick="showDetailedHelp()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 rounded-xl shadow transition">📖 詳細說明</button>
+                    <button onclick="closeHelp()" class="w-full bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-2.5 rounded-xl shadow transition">知道了</button>
+                </div>
+            </div>
+            <div id="helpDetailed" class="hidden flex flex-col h-full overflow-hidden">
+                <h2 class="text-xl font-bold text-center mb-2 text-blue-600 flex-shrink-0 mt-2">詳細規則</h2>
+                <div class="overflow-y-auto flex-1 min-h-0 space-y-4 text-sm text-gray-700 mb-2 pr-1 px-1 custom-scrollbar pb-4 allow-scroll">
+                    <section>
+                        <h3 class="font-bold text-base text-green-600 border-b border-green-200 mb-2 pb-1">🏆 計分方式</h3>
+                        <ul class="list-disc pl-5 space-y-1 text-xs">
+                            <li><b>基本消除：</b>每個方塊 10 分。</li>
+                            <li><b>Combo 連擊：</b>1秒內連續消除，每連鎖一次額外加分 (Combo x 10)。</li>
+                            <li><b>消除冰塊：</b>每個 200 分。</li>
+                            <li><b>清除胖胖凍：</b>消除方塊下方的「胖胖凍」背景，每個 500 分。</li>
+                            <li><b>提示懲罰：</b>每次使用扣除 100 分。</li>
+                        </ul>
+                    </section>
+                    <section>
+                        <h3 class="font-bold text-base text-red-500 border-b border-red-200 mb-2 pb-1">✨ 特殊方塊合成</h3>
+                        <div class="space-y-3">
+                            <div class="bg-gray-50 p-2 rounded">
+                                <span class="font-bold text-gray-800">🚀 條紋火箭</span>
+                                <p class="text-xs text-gray-500 mt-1">產生：<b>4 個</b>連成直線。</p>
+                                <p class="text-xs text-blue-500">效果：消除所在的一整行或一整列。</p>
+                            </div>
+                            <div class="bg-gray-50 p-2 rounded">
+                                <span class="font-bold text-gray-800">💣 炸彈小麻糬</span>
+                                <p class="text-xs text-gray-500 mt-1">產生：<b>L 型</b> 或 <b>T 型</b> 交叉消除。</p>
+                                <p class="text-xs text-blue-500">效果：看起來像粉紅色小麻糬。兩次爆炸，消除周圍 3x3 區域。</p>
+                            </div>
+                            <div class="bg-gray-50 p-2 rounded">
+                                <span class="font-bold text-gray-800">🌈 彩虹皮卡丘</span>
+                                <p class="text-xs text-gray-500 mt-1">產生：<b>5 個</b>連成直線。</p>
+                                <p class="text-xs text-blue-500">效果：與任意方塊交換，消除場上<b>所有</b>該顏色的方塊。</p>
+                            </div>
+                        </div>
+                    </section>
+                    <section>
+                         <h3 class="font-bold text-base text-purple-600 border-b border-purple-200 mb-2 pb-1">🚧 障礙物與目標</h3>
+                         <ul class="list-disc pl-5 space-y-2 text-xs">
+                            <li><b>🧊 冰塊：</b>位於方塊下方，在此處消除方塊即可擊碎。</li>
+                            <li><b>⛓️ 鎖鏈：</b>方塊被鎖住無法移動，需在它<b>上下左右</b>相鄰處消除來解鎖。</li>
+                            <li><b>🍯 胖胖凍：</b>特殊目標。黏在格子底部，在上方消除可清除，獎勵高分(500分)。</li>
+                        </ul>
+                    </section>
+                    <div class="h-4"></div>
+                </div>
+                <div class="flex-shrink-0 pt-2 border-t border-gray-100">
+                    <button onclick="hideDetailedHelp()" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2.5 rounded-xl shadow flex-shrink-0 transition">⬅️ 返回</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="settingsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="modal p-6 rounded-3xl w-full max-w-xs border-4 border-blue-300 flex flex-col max-h-[80vh]">
+            <h2 class="text-xl font-bold text-center mb-4 text-blue-600 shrink-0">設定</h2>
+            <div class="flex-1 overflow-y-auto mb-4 custom-scrollbar allow-scroll">
+                <button onclick="returnToMainMenu()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg shadow text-sm mb-4 transition">
+                    🏠 回到主畫面
+                </button>
+                
+                <!-- 音樂設定區塊 -->
+                <div class="mb-4 p-2 bg-purple-50 rounded border border-purple-200 text-center">
+                    <h3 class="font-bold text-purple-700 mb-2 text-sm">🎵 音樂與音效</h3>
+                    <div class="flex flex-col gap-2">
+                        <!-- 只保留上傳和重置按鈕 -->
+                        <div class="flex gap-2 justify-center">
+                             <label class="bg-blue-500 text-white text-xs px-3 py-2 rounded-lg cursor-pointer shadow hover:bg-blue-600 transition flex items-center justify-center gap-1">
+                                <span>📂 上傳檔案</span>
+                                <input type="file" hidden accept="audio/*" onchange="handleMusicUpload(event)">
+                            </label>
+                            <button onclick="restoreDefaultMusic()" class="bg-gray-400 text-white text-xs px-3 py-2 rounded-lg shadow hover:bg-gray-500 transition cursor-pointer">
+                                ⛔ 停止/預設
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4 p-2 bg-yellow-50 rounded border border-yellow-200 text-center">
+                    <h3 class="font-bold text-yellow-700 mb-2 text-sm">主畫面圖片</h3>
+                    <div class="flex gap-2 justify-center">
+                        <label class="bg-yellow-500 text-white text-xs px-3 py-2 rounded-lg cursor-pointer shadow hover:bg-yellow-600 transition">
+                            更換圖案
+                            <input type="file" hidden accept="image/*" onchange="handleMainMenuUpload(event)">
+                        </label>
+                        <button onclick="restoreDefaultMainMenuImage()" class="bg-gray-400 text-white text-xs px-3 py-2 rounded-lg shadow hover:bg-gray-500 transition cursor-pointer">
+                            恢復預設
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="border-gray-300 my-4">
+                <h3 class="font-bold text-gray-600 mb-2 text-sm">自訂角色圖片</h3>
+                <div id="uploadList" class="grid grid-cols-2 gap-3 mb-4"></div>
+                
+                <hr class="border-gray-300 my-4">
+                <h3 class="font-bold text-gray-600 mb-2 text-sm">遊戲資料</h3>
+                <button onclick="clearSaveData()" class="w-full bg-red-500 text-white font-bold py-2 rounded-lg shadow text-sm">🗑️ 清除所有存檔</button>
+            </div>
+            <button onclick="closeSettings()" class="w-full bg-blue-500 text-white font-bold py-2 rounded-xl shadow shrink-0">完成</button>
+        </div>
+    </div>
+    
+    <div id="gameOverModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div class="modal p-8 rounded-3xl text-center w-full max-w-xs border-4 border-yellow-400">
+            <h2 id="modalTitle" class="text-3xl font-bold mb-2"></h2>
+            <p id="modalMessage" class="text-gray-600 mb-6"></p>
+            <div id="modalIcon" class="w-20 h-20 mx-auto mb-4 flex justify-center text-4xl gap-2"></div>
+            <div id="modalButtons" class="flex flex-col gap-2"></div>
+        </div>
+    </div>
+
+    <script>
+        // 1. 全域變數定義
+        var width = 8;
+        var boardState = new Array(width * width).fill(null); 
+        var iceState = new Array(width * width).fill(0); 
+        var chainState = new Array(width * width).fill(0); 
+        var honeyState = new Array(width * width).fill(0); 
+        var grid = document.getElementById('grid');
+        var domSquares = []; 
+        var floatingLayer = document.getElementById('floatingLayer'); 
+
+        // 預設音樂網址 (更新為使用者提供的 Git 網址)
+        var defaultBgmUrl = 'https://github.com/SHW-coder/WinnePIC/raw/refs/heads/main/boy.mp3';
+
+        var score = 0, moves = 0, hints = 3, currentLevelIndex = 0;
+        var isProcessing = false, isAutoPlaying = false;
+        var dragStartId = null, dragStartPoint = null, activeTouchId = null;
+        var lastMatchTime = 0, comboCount = 0;
+        var swapSourceId = null;
+        var isTimeMode = false, timeRemaining = 60, timerInterval = null, timeAttackHighScore = 0;
+        var customMainMenuImg = null;
+        var systemConfirmCallback = null;
+        
+        var STORAGE_KEY = 'winnie_match3_save_v10'; 
+        var highScores = {}; 
+
+        // --- 音效系統 (Web Audio API) ---
+        var audioCtx = null; // 初始化延遲到使用者互動
+        
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            // 嘗試自動播放預設音樂 (如果在設定中有網址)
+            const bgmAudio = document.getElementById('bgmAudio');
+            if (bgmAudio.paused && !bgmAudio.src) {
+                 // 可以在這裡嘗試播放，但通常會被擋，還是建議由按鈕觸發
+                 // 為了讓它自動在點擊時生效，我們可以將預設網址設為 src
+                 bgmAudio.src = defaultBgmUrl;
+            }
+        }
+
+        // 播放「波波」消除音效 (合成音)
+        function playPopSound(combo = 0) {
+            initAudio();
+            if (!audioCtx) return;
+            
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            // 隨 combo 提高音調
+            const baseFreq = 400 + (combo * 100); 
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(baseFreq * 2, audioCtx.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        // 播放錯誤音效 (合成音)
+        function playErrorSound() {
+            initAudio();
+            if (!audioCtx) return;
+            
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+
+        // 播放 BGM (檔案上傳)
+        function handleMusicUpload(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const bgmAudio = document.getElementById('bgmAudio');
+                bgmAudio.src = URL.createObjectURL(file);
+                
+                bgmAudio.play().then(() => {
+                    showSystemMessage("開始播放您上傳的音樂！");
+                }).catch(err => {
+                    console.log("Autoplay prevented:", err);
+                    showSystemMessage("音樂已載入，請點擊畫面任意處開始播放。");
+                });
+            }
+        }
+
+        // 恢復預設 (停止播放並重置為 Git 網址)
+        function restoreDefaultMusic() {
+            const bgmAudio = document.getElementById('bgmAudio');
+            
+            bgmAudio.pause();
+            bgmAudio.src = defaultBgmUrl; // 重置為預設網址
+            
+            // 嘗試播放預設音樂 (可能需要使用者互動)
+            bgmAudio.play().catch(() => {
+                // 如果被擋，沒關係，下次點擊就會播了
+            });
+            
+            showSystemMessage("已恢復預設音樂 (boy.mp3)。");
+        }
+
+        var levelConfig = [
+            { level: 1, target: 1000, moves: 15, type: 'score' }, 
+            { level: 2, target: 2000, moves: 18, type: 'score' },
+            { level: 3, target: 3000, moves: 20, type: 'ice', iceCount: 8, honeyCount: 5 },  
+            { level: 4, target: 4000, moves: 22, type: 'score', chainCount: 5 },
+            { level: 5, target: 4500, moves: 32, type: 'ice', iceCount: 16, honeyCount: 8 },
+            { level: 6, target: 6000, moves: 25, type: 'score', chainCount: 10 },
+            { level: 7, target: 7000, moves: 30, type: 'ice', iceCount: 22 }, 
+            { level: 8, target: 8000, moves: 30, type: 'score', chainCount: 15, honeyCount: 10 },
+            { level: 9, target: 9000, moves: 35, type: 'ice', iceCount: 30 }, 
+            { level: 10, target: 10000, moves: 35, type: 'score', chainCount: 20, honeyCount: 15 }
+        ];
+
+        var svgs = {
+            pooh: `<img src="https://raw.githubusercontent.com/SHW-coder/WinnePIC/main/poohs.png" class="character-content" draggable="false">`,
+            piglet: `<img src="https://raw.githubusercontent.com/SHW-coder/WinnePIC/main/mochi.png" class="character-content" draggable="false">`,
+            tigger: `<img src="https://raw.githubusercontent.com/SHW-coder/WinnePIC/main/tigger.png" class="character-content" draggable="false">`,
+            eeyore: `<img src="https://raw.githubusercontent.com/SHW-coder/WinnePIC/main/eeyore.png" class="character-content" draggable="false">`,
+            // 嚕米胖 (瑞比) 已更新
+            rabbit: `<img src="https://raw.githubusercontent.com/SHW-coder/WinnePIC/main/Fat_funny.png" class="character-content" draggable="false">`,
+            // 胖胖 (蜂蜜) 已更新
+            honey: `<img src="https://github.com/SHW-coder/WinnePIC/blob/main/fat_cute.png?raw=true" class="character-content" draggable="false">`,
+            // 彩虹罐已更新為皮卡丘 - 加上 rainbow-spinner 讓旋轉動畫獨立運作
+            rainbow: `<div class="rainbow-spinner"><img src="https://raw.githubusercontent.com/SHW-coder/WinnePIC/main/pikachu_Gemini.png" class="character-content" draggable="false"></div>`
+        };
+
+        var characters = [
+            { id: 'pooh', name: '維尼', content: svgs.pooh, cssClass: 'bg-pooh' },
+            { id: 'piglet', name: '小麻糬', content: svgs.piglet, cssClass: 'bg-piglet' },
+            { id: 'tigger', name: '跳跳虎', content: svgs.tigger, cssClass: 'bg-tigger' },
+            { id: 'eeyore', name: '屹耳', content: svgs.eeyore, cssClass: 'bg-eeyore' },
+            { id: 'rabbit', name: '嚕米胖', content: svgs.rabbit, cssClass: 'bg-rabbit' },
+            { id: 'honey', name: '胖胖', content: svgs.honey, cssClass: 'bg-honey' }
+        ];
+
+        // --- 2. 核心與 UI 函式 (Core & UI Functions) ---
+        function safeSetText(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
+        function wait(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+        
+        function loadProgress() {
+            try {
+                var saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    var data = JSON.parse(saved);
+                    if (typeof data.level === 'number') currentLevelIndex = data.level;
+                    if (data.highScores) highScores = data.highScores;
+                    if (typeof data.timeAttackHighScore === 'number') timeAttackHighScore = data.timeAttackHighScore;
+                    if (data.customMainMenuImg) customMainMenuImg = data.customMainMenuImg;
+                }
+            } catch (e) {}
+        }
+        function saveProgress() {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify({level: currentLevelIndex, highScores: highScores, timeAttackHighScore: timeAttackHighScore, customMainMenuImg: customMainMenuImg})); } catch (e) {}
+        }
+
+        function renderSquare(index, withAnimation) {
+            var square = domSquares[index];
+            var rawId = boardState[index];
+            var hasIce = iceState[index] > 0;
+            var hasChain = chainState[index] > 0;
+            var hasHoney = honeyState[index] > 0;
+            
+            var stateKey = `${rawId}-${hasIce}-${hasChain}-${hasHoney}`;
+            if (square.dataset.lastState === stateKey && !withAnimation) return;
+            
+            var charId = rawId ? rawId.split('|')[0] : null;
+            var specialType = rawId && rawId.includes('|') ? rawId.split('|')[1] : null;
+            if (charId === 'rainbow') { specialType = 'r'; } 
+
+            characters.forEach(function(c) { square.classList.remove(c.cssClass); });
+            square.classList.remove('crushed', 'dropping', 'special-h', 'special-v', 'special-b', 'special-r', 'special-bg', 'layer-ice', 'layer-chain', 'honey-layer');
+            square.style = '';
+
+            if (hasIce) square.classList.add('layer-ice');
+            if (hasChain) square.classList.add('layer-chain');
+            if (hasHoney) square.classList.add('honey-layer');
+
+            if (charId) {
+                if (charId === 'rainbow') {
+                    // Update: Rainbow now uses image tag
+                    square.classList.add('special-r');
+                    square.innerHTML = svgs.rainbow;
+                } else {
+                    var config = characters.find(function(c) { return c.id === charId; });
+                    if (config) {
+                        square.classList.add(config.cssClass);
+                        if (specialType) square.classList.add(`special-${specialType}`, 'special-bg');
+                        if (square.innerHTML !== config.content) square.innerHTML = config.content;
+                    }
+                }
+                if (withAnimation) { void square.offsetWidth; square.classList.add('dropping'); }
+            } else { square.innerHTML = ''; }
+            square.dataset.lastState = stateKey;
+        }
+
+        function renderBoard(animatedIndices) { 
+            animatedIndices = animatedIndices || [];
+            for (var i = 0; i < width * width; i++) renderSquare(i, animatedIndices.includes(i)); 
+        }
+
+        function renderSettings() { 
+            var list = document.getElementById('uploadList'); 
+            list.innerHTML = ''; 
+            characters.forEach(function(c) { 
+                var div = document.createElement('div'); 
+                div.className = 'flex flex-col items-center bg-gray-100 p-2 rounded'; 
+                div.innerHTML = `
+                    <div class="w-12 h-12 mb-1" id="preview-${c.id}">${c.content}</div>
+                    <div class="flex gap-1">
+                        <label class="bg-blue-500 hover:bg-blue-600 text-white text-[10px] px-2 py-1 rounded cursor-pointer transition">
+                            上傳
+                            <input type="file" hidden onchange="handleUpload(event, '${c.id}')">
+                        </label>
+                        <button onclick="restoreCharacterImage('${c.id}')" class="bg-gray-400 hover:bg-gray-500 text-white text-[10px] px-2 py-1 rounded cursor-pointer transition">
+                            復原
+                        </button>
+                    </div>
+                `; 
+                list.appendChild(div); 
+            }); 
+        }
+
+        function updateMainMenuImage() {
+            var container = document.getElementById('mainMenuImageContainer');
+            var defaultSvg = document.getElementById('defaultMainImage');
+            var oldImg = container.querySelector('.main-menu-custom-img');
+            if (oldImg) oldImg.remove();
+            if (customMainMenuImg) {
+                defaultSvg.classList.add('hidden');
+                var img = document.createElement('img'); img.src = customMainMenuImg; img.className = 'main-image-content main-menu-custom-img'; container.appendChild(img);
+            } else { defaultSvg.classList.remove('hidden'); }
+        }
+
+        function initDOM() {
+            grid.innerHTML = ''; domSquares.length = 0; 
+            for (var i = 0; i < width * width; i++) { 
+                var square = document.createElement('div'); square.setAttribute('id', i); square.className = 'grid-cell'; 
+                square.addEventListener('mousedown', handleInputStart); square.addEventListener('touchstart', handleInputStart, {passive: false}); 
+                grid.appendChild(square); domSquares.push(square); 
+            } 
+            document.addEventListener('mouseup', handleInputEnd); document.addEventListener('touchend', handleInputEnd); document.addEventListener('touchcancel', handleInputEnd); 
+            
+            // 使用者第一次互動時初始化音效
+            document.addEventListener('click', () => {
+                initAudio();
+                // 嘗試播放預設音樂
+                const bgmAudio = document.getElementById('bgmAudio');
+                if (bgmAudio.paused) {
+                    // 如果沒有 src，先設定為預設
+                    if (!bgmAudio.src) bgmAudio.src = defaultBgmUrl;
+                    bgmAudio.play().catch(e => console.log("Audio play failed:", e));
+                }
+            }, { once: true });
+            document.addEventListener('touchstart', () => {
+                initAudio();
+                const bgmAudio = document.getElementById('bgmAudio');
+                if (bgmAudio.paused) {
+                    if (!bgmAudio.src) bgmAudio.src = defaultBgmUrl;
+                    bgmAudio.play().catch(e => console.log("Audio play failed:", e));
+                }
+            }, { once: true });
+        }
+
+        function checkUrgency() { 
+            var isCritical = isTimeMode ? (timeRemaining <= 10) : (moves <= 5 && moves > 0 && !isLevelCleared()); 
+            var body = document.body; var movesEl = document.getElementById('moves'); 
+            if (isCritical) { body.classList.add('urgency-bg'); if (movesEl) movesEl.classList.add('urgency-text'); } 
+            else { body.classList.remove('urgency-bg'); if (movesEl) movesEl.classList.remove('urgency-text'); } 
+        }
+        function isLevelCleared() { 
+            var config = levelConfig[currentLevelIndex] || levelConfig[0]; 
+            if (config.type === 'ice') return !iceState.includes(1); 
+            return score >= config.target; 
+        }
+
+        function showFloatingScore(val, r, c, isCombo) { 
+            var el = document.createElement('div'); 
+            el.className = isCombo ? 'floating-score combo-text' : 'floating-score'; 
+            el.innerText = (isCombo ? 'Combo! ' : '') + '+' + Math.floor(val); 
+            el.style.left = ((c+0.5)/width*100) + '%'; 
+            el.style.top = ((r+0.5)/width*100) + '%'; 
+            floatingLayer.appendChild(el); 
+            setTimeout(function() { el.remove(); }, 1000); 
+        }
+
+        function updateProgressBar() { 
+            var config = levelConfig[currentLevelIndex] || levelConfig[0]; 
+            var scoreProgress = document.getElementById('scoreProgress'); 
+            if (config.type === 'ice') { 
+                var totalIce = config.iceCount; var currentIce = iceState.reduce(function(a, b) { return a + b; }, 0); var pct = Math.min(((totalIce - currentIce) / totalIce) * 100, 100); 
+                if (scoreProgress) { scoreProgress.style.width = pct + '%'; } 
+                safeSetText('targetDisplay', `剩餘 ${currentIce} 冰塊`); 
+            } else { 
+                var target = config.target; var pct = Math.min((score / target) * 100, 100); 
+                if (scoreProgress) { scoreProgress.style.width = pct + '%'; } 
+                safeSetText('targetDisplay', target); 
+            } 
+            checkUrgency(); 
+            var targetScore = config.target; 
+            var s1 = document.getElementById('star1'); var s2 = document.getElementById('star2'); var s3 = document.getElementById('star3'); 
+            if (s1 && s2 && s3) { s1.classList.toggle('star-active', score >= targetScore); s2.classList.toggle('star-active', score >= targetScore * 1.5); s3.classList.toggle('star-active', score >= targetScore * 2); } 
+        }
+        function updateHintButtonState() {}
+
+        function setProcessing(p) { isProcessing = p; grid.classList.toggle('processing', p); document.getElementById('hintBtn').disabled = p; }
+
+        // --- 3. 遊戲邏輯 (Game Logic) ---
+        function getBaseId(index) { if (index < 0 || index >= width * width || !boardState[index]) return null; return boardState[index].split('|')[0]; }
+
+        function getMatchGroupsLogic() { 
+            var hMatches = [], vMatches = []; 
+            for (var r = 0; r < width; r++) { 
+                for (var c = 0; c < width - 2; c++) { 
+                    var type = getBaseId(r*width+c); if (!type || type==='rainbow') continue; 
+                    var k = 1; while (c+k < width && getBaseId(r*width+(c+k)) === type) k++; 
+                    if (k >= 3) { var indices = []; for(var m=0; m<k; m++) indices.push(r*width+(c+m)); hMatches.push({indices: indices, type:'h'}); c += k-1; } 
+                } 
+            } 
+            for (var c = 0; c < width; c++) { 
+                for (var r = 0; r < width - 2; r++) { 
+                    var type = getBaseId(r*width+c); if (!type || type==='rainbow') continue; 
+                    var k = 1; while (r+k < width && getBaseId((r+k)*width+c) === type) k++; 
+                    if (k >= 3) { var indices = []; for(var m=0; m<k; m++) indices.push((r+m)*width+c); vMatches.push({indices: indices, type:'v'}); r += k-1; } 
+                } 
+            } 
+            var groups = [], usedV = new Set(); 
+            hMatches.forEach(function(hm) { 
+                var merged = false; 
+                vMatches.forEach(function(vm, vIdx) { 
+                    if (usedV.has(vIdx)) return; 
+                    var intersection = hm.indices.filter(function(value) { return vm.indices.includes(value); }); 
+                    if (intersection.length > 0) { var allIndices = Array.from(new Set([...hm.indices, ...vm.indices])); groups.push({ indices: allIndices, type: 'b' }); usedV.add(vIdx); merged = true; } 
+                }); 
+                if (!merged) groups.push(hm); 
+            }); 
+            vMatches.forEach(function(vm, idx) { if (!usedV.has(idx)) groups.push(vm); }); 
+            return groups; 
+        }
+
+        function findPossibleMoveLogic() { 
+            var testSwap = function(i1, i2) { 
+                var t = boardState[i1]; boardState[i1] = boardState[i2]; boardState[i2] = t; 
+                var groups = getMatchGroupsLogic(); 
+                t = boardState[i1]; boardState[i1] = boardState[i2]; boardState[i2] = t; 
+                return groups.length > 0; 
+            }; 
+            for (var i = 0; i < width * width; i++) { 
+                if (i % width < width - 1 && testSwap(i, i+1)) return true; 
+                if (i + width < width * width && testSwap(i, i+width)) return true; 
+            } 
+            return false; 
+        }
+
+        function reshuffleBoardLogic() { 
+            var solvable = false; var attempts = 0; 
+            while (!solvable && attempts < 100) { 
+                for (var i = 0; i < width * width; i++) { 
+                    var charId; 
+                    do { charId = characters[Math.floor(Math.random() * characters.length)].id; } 
+                    while ( (i % width >= 2 && getBaseId(i-1) === charId && getBaseId(i-2) === charId) || (i >= width * 2 && getBaseId(i-width) === charId && getBaseId(i-width*2) === charId) ); 
+                    boardState[i] = charId; 
+                } 
+                if (findPossibleMoveLogic()) solvable = true; attempts++; 
+            } 
+        }
+
+        function findBestMove() { 
+            var bestMove = null; var maxWeight = -1; 
+            var config = levelConfig[currentLevelIndex] || levelConfig[0];
+            for (var i = 0; i < width * width; i++) { 
+                if (i % width < width - 1) { var w = evaluateSwap(i, i + 1, isTimeMode ? 'score' : config.type); if (w > maxWeight) { maxWeight = w; bestMove = [i, i + 1]; } } 
+                if (i + width < width * width) { var w = evaluateSwap(i, i + width, isTimeMode ? 'score' : config.type); if (w > maxWeight) { maxWeight = w; bestMove = [i, i + width]; } } 
+            } 
+            return bestMove; 
+        }
+
+        function evaluateSwap(id1, id2, levelType) { 
+            if (chainState[id1] || chainState[id2]) return -1; 
+            var t = boardState[id1]; boardState[id1] = boardState[id2]; boardState[id2] = t; 
+            var groups = getMatchGroupsLogic(); 
+            var weight = 0; 
+            if (groups.length === 0) { 
+                t = boardState[id1]; boardState[id1] = boardState[id2]; boardState[id2] = t; 
+                var orig1 = boardState[id1]; var orig2 = boardState[id2]; 
+                if ((orig1 && orig1.startsWith('rainbow')) || (orig2 && orig2.startsWith('rainbow'))) { 
+                    weight = levelType === 'score' ? 10000 : 5000; 
+                    if ((orig1 && orig1.startsWith('rainbow')) && (orig2 && orig2.startsWith('rainbow'))) weight = 20000; 
+                    return weight; 
+                } 
+                return -1; 
+            } 
+            groups.forEach(function(g) { 
+                weight += g.indices.length * 10; 
+                if (g.indices.length >= 5) weight += (levelType === 'score' ? 5000 : 3000); 
+                else if (g.type === 'b') weight += (levelType === 'score' ? 2000 : 1500); 
+                else if (g.indices.length === 4) weight += (levelType === 'score' ? 1000 : 800); 
+                g.indices.forEach(function(idx) { 
+                    if (iceState[idx]) weight += (levelType === 'ice' ? 10000 : 200); 
+                    if(honeyState[idx]) weight += 500;
+                    [idx-1, idx+1, idx-width, idx+width].forEach(function(n) { if (n>=0 && n<64 && chainState[n]) weight += 500; }); 
+                }); 
+            }); 
+            t = boardState[id1]; boardState[id1] = boardState[id2]; boardState[id2] = t; 
+            return weight; 
+        }
+
+        function applyGravityLogic(indicesToRemove) { 
+            indicesToRemove.forEach(function(idx) { boardState[idx] = null; }); 
+            var changedIndices = new Set(); 
+            for (var col = 0; col < width; col++) { 
+                var newCol = []; 
+                for (var row = 0; row < width; row++) { var idx = row * width + col; if (boardState[idx] !== null) newCol.push(boardState[idx]); } 
+                var missingCount = width - newCol.length; 
+                for (var k = 0; k < missingCount; k++) newCol.unshift(characters[Math.floor(Math.random() * characters.length)].id); 
+                for (var row = 0; row < width; row++) { var idx = row * width + col; if (boardState[idx] !== newCol[row]) { boardState[idx] = newCol[row]; changedIndices.add(idx); } } 
+            } 
+            return Array.from(changedIndices); 
+        }
+
+        // --- 4. 遊戲流程函式 (Game Flow - Defined before use) ---
+
+        function stopAutoWin() { 
+            isAutoPlaying = false; 
+            var btn = document.getElementById('autoWinBtn'); 
+            if(btn) {
+                btn.classList.remove('text-green-400', 'animate-pulse'); 
+                btn.textContent = '🤖 自動'; 
+            }
+            if(grid) grid.classList.remove('bot-active'); 
+        }
+
+        async function processClearList(indicesSet, spawnRequests) {
+            spawnRequests = spawnRequests || [];
+            var toProcess = Array.from(indicesSet); var processed = new Set(); var finalClear = new Set();
+            while(toProcess.length > 0) {
+                var idx = toProcess.pop(); if(processed.has(idx)) continue; processed.add(idx); finalClear.add(idx);
+                [idx-1, idx+1, idx-width, idx+width].forEach(function(n) { if(n>=0 && n<64 && chainState[n]) { chainState[n] = 0; renderSquare(n); } });
+                var raw = boardState[idx];
+                if(raw && raw.includes('|')) {
+                    var type = raw.split('|')[1]; var r = Math.floor(idx / width), c = idx % width;
+                    if(type==='h') for(var k=0; k<width; k++) toProcess.push(r * width + k);
+                    if(type==='v') for(var k=0; k<width; k++) toProcess.push(k * width + c);
+                    if(type==='b') { for(var dr=-1; dr<=1; dr++) for(var dc=-1; dc<=1; dc++) { var nr=r+dr, nc=c+dc; if(nr>=0&&nr<8&&nc>=0&&nc<8) toProcess.push(nr*8+nc); } }
+                }
+            }
+            finalClear.forEach(function(idx) { 
+                if(iceState[idx]) { 
+                    iceState[idx] = 0; 
+                    score+=200; 
+                    // Add Ice Score Visual
+                    showFloatingScore(200, Math.floor(idx/width), idx%width, false);
+                } 
+                if(honeyState[idx]) { honeyState[idx] = 0; score+=500; showFloatingScore(500, Math.floor(idx/width), idx%width, false); }
+                var sq = domSquares[idx]; sq.innerHTML = '✨'; sq.classList.add('crushed'); sq.style.backgroundColor = '#FFF'; 
+            }); 
+            score += finalClear.size * 20; safeSetText('score', score); if(!isTimeMode) updateProgressBar(); 
+            spawnRequests.forEach(function(req) { finalClear.delete(req.index); if (req.type === 'rainbow') boardState[req.index] = 'rainbow'; else boardState[req.index] = `${req.baseChar}|${req.type}`; domSquares[req.index].dataset.lastState = 'FORCE'; renderSquare(req.index); }); 
+            await wait(300);
+            var changed = applyGravityLogic(Array.from(finalClear)); changed.forEach(function(i) { domSquares[i].dataset.lastState = 'FORCE'; }); renderBoard(changed); await wait(400);
+            var newMatches = getMatchGroupsLogic();
+            if(newMatches.length > 0) await processMatches(newMatches); else { if (moves > 0 && !findPossibleMoveLogic()) await handleNoMoves(); if(!isTimeMode) checkGameState(); }
+        }
+
+        async function processMatches(groups) {
+            var currentMatches = groups;
+            while (currentMatches.length > 0) {
+                var now = Date.now(); if (now - lastMatchTime <= 1200) comboCount++; else comboCount = 0; lastMatchTime = now;
+                var indicesToClear = new Set(); var spawnRequests = []; 
+                currentMatches.forEach(function(group) {
+                    var indices = group.indices; var baseChar = getBaseId(indices[0]); var baseScore = indices.length * 10; var bonus = comboCount * 10;
+                    
+                    // Fixed Display Logic: Show total score (Match + Clear Bonus)
+                    var clearBonus = indices.length * 20; 
+                    var totalVisualScore = baseScore + bonus + clearBonus;
+
+                    score += baseScore + bonus;
+                    var tr = 0, tc = 0; indices.forEach(function(idx) { tr += Math.floor(idx/width); tc += idx%width; }); 
+                    
+                    showFloatingScore(totalVisualScore, tr/indices.length, tc/indices.length, comboCount > 0);
+                    
+                    // 播放音效
+                    playPopSound(comboCount);
+
+                    if (indices.length >= 4) {
+                        var spawnIndex = indices.includes(swapSourceId) ? swapSourceId : indices[0]; if (!indices.includes(spawnIndex)) spawnIndex = indices[0];
+                        // Prioritize Bomb shape (b) over Rainbow count (5)
+                        var type = ''; 
+                        if (group.type === 'b') type = 'b'; 
+                        else if (indices.length >= 5) type = 'rainbow'; 
+                        else type = group.type === 'h' ? 'v' : 'h'; 
+                        
+                        if (type === 'rainbow') { spawnRequests.push({ index: spawnIndex, type: 'rainbow', baseChar: 'rainbow' }); } else { spawnRequests.push({ index: spawnIndex, type: type, baseChar: baseChar }); }
+                    }
+                    indices.forEach(function(idx) { indicesToClear.add(idx); });
+                });
+                await processClearList(indicesToClear, spawnRequests); currentMatches = []; 
+            }
+        }
+
+        async function swapSquares(id1, id2) {
+            if (chainState[id1] || chainState[id2]) { 
+                domSquares[id1].classList.add('animate-shake'); 
+                playErrorSound(); // 錯誤音效
+                setTimeout(function(){domSquares[id1].classList.remove('animate-shake')}, 400); return; 
+            }
+            setProcessing(true); swapSourceId = id2; 
+            var id1Base = getBaseId(id1); var id2Base = getBaseId(id2);
+            if (id1Base === 'rainbow' || id2Base === 'rainbow') {
+                var rainbowIdx = id1Base === 'rainbow' ? id1 : id2; var targetIdx = id1Base === 'rainbow' ? id2 : id1; var targetChar = getBaseId(targetIdx);
+                if (targetChar === 'rainbow') { 
+                    if(!isTimeMode){moves--; safeSetText('moves', moves);} checkUrgency(); 
+                    var all = []; for(var i=0; i<64; i++) all.push(i); 
+                    
+                    // Show Rainbow Score
+                    var rainbowScore = all.length * 20;
+                    showFloatingScore(rainbowScore, Math.floor(rainbowIdx/width), rainbowIdx%width, true);
+                    playPopSound(5); // 大爆炸音效
+
+                    await processClearList(new Set(all)); 
+                } else { 
+                    if(!isTimeMode){moves--; safeSetText('moves', moves);} checkUrgency(); 
+                    var targets = new Set([rainbowIdx]); for(var i=0; i<64; i++) { if(getBaseId(i) === targetChar) targets.add(i); } 
+                    
+                    // Show Rainbow Score
+                    var rainbowScore = targets.size * 20;
+                    showFloatingScore(rainbowScore, Math.floor(rainbowIdx/width), rainbowIdx%width, true);
+                    playPopSound(3); // 彩虹消除音效
+
+                    await processClearList(targets); 
+                }
+                setProcessing(false); return;
+            }
+            var temp = boardState[id1]; boardState[id1] = boardState[id2]; boardState[id2] = temp;
+            domSquares[id1].dataset.lastState = 'FORCE'; domSquares[id2].dataset.lastState = 'FORCE'; renderSquare(id1); renderSquare(id2);
+            var matchGroups = getMatchGroupsLogic(); 
+            if (matchGroups.length > 0) { 
+                if(!isTimeMode){moves--; safeSetText('moves', moves);} checkUrgency(); await processMatches(matchGroups); 
+            } else { 
+                playErrorSound(); // 交換失敗音效
+                domSquares[id1].classList.add('animate-shake'); domSquares[id2].classList.add('animate-shake'); await wait(400); 
+                domSquares[id1].classList.remove('animate-shake'); domSquares[id2].classList.remove('animate-shake'); 
+                temp = boardState[id1]; boardState[id1] = boardState[id2]; boardState[id2] = temp; 
+                domSquares[id1].dataset.lastState = 'FORCE'; domSquares[id2].dataset.lastState = 'FORCE'; renderSquare(id1); renderSquare(id2); 
+            }
+            setProcessing(false);
+        }
+
+        function handleInputStart(e) { if (isProcessing || (moves <= 0 && !isTimeMode) || isAutoPlaying) return; var touch = e.type === 'touchstart' ? e.changedTouches[0] : e; if (e.type === 'touchstart') { if (activeTouchId !== null) return; activeTouchId = touch.identifier; } else { e.preventDefault(); } dragStartId = parseInt(e.currentTarget.id); dragStartPoint = { x: touch.clientX, y: touch.clientY }; domSquares[dragStartId].classList.add('selected'); }
+        function handleInputEnd(e) { if (dragStartId === null) return; var touch = e.type === 'touchend' || e.type === 'touchcancel' ? Array.from(e.changedTouches).find(function(t) {return t.identifier === activeTouchId}) : e; if (!touch && (e.type === 'touchend' || e.type === 'touchcancel')) return; var diffX = touch.clientX - dragStartPoint.x; var diffY = touch.clientY - dragStartPoint.y; if (Math.abs(diffX) > 30 || Math.abs(diffY) > 30) { let targetId = null; if (Math.abs(diffX) > Math.abs(diffY)) { targetId = diffX > 0 ? (dragStartId % width < width-1 ? dragStartId+1 : null) : (dragStartId % width > 0 ? dragStartId-1 : null); } else { targetId = diffY > 0 ? (dragStartId + width < width*width ? dragStartId+width : null) : (dragStartId - width >= 0 ? dragStartId-width : null); } if (targetId !== null) swapSquares(dragStartId, targetId); } if (domSquares[dragStartId]) domSquares[dragStartId].classList.remove('selected'); dragStartId = null; activeTouchId = null; }
+
+        function checkGameState() { 
+            var config = levelConfig[currentLevelIndex]; var isGoalMet = isLevelCleared(); 
+            if (!highScores[currentLevelIndex] || score > highScores[currentLevelIndex]) { highScores[currentLevelIndex] = score; safeSetText('bestScore', score); saveProgress(); } 
+            var isThreeStars = score >= config.target * 2; var isOutOfMoves = moves <= 0; 
+            if ((isGoalMet && isThreeStars) || isOutOfMoves || (isGoalMet && moves <= 0)) { 
+                stopAutoWin(); var modal = document.getElementById('gameOverModal'); var title = document.getElementById('modalTitle'); var message = document.getElementById('modalMessage'); var btns = document.getElementById('modalButtons'); var icon = document.getElementById('modalIcon'); 
+                modal.classList.remove('hidden'); 
+                if (isGoalMet) { 
+                    var stars = 1; if (score >= config.target * 1.5) stars = 2; if (score >= config.target * 2) stars = 3; 
+                    icon.innerHTML = `<span class="text-yellow-400 text-4xl">${'★'.repeat(stars)}</span>`; title.innerText = "🎉 過關！"; 
+                    if (currentLevelIndex >= levelConfig.length - 1) { 
+                        message.innerText = "恭喜完成所有關卡！"; 
+                        btns.innerHTML = `<button onclick="restartGame()" class="bg-yellow-500 text-white py-2 rounded-xl w-full shadow-lg mb-2">重玩遊戲</button><button onclick="returnToMainMenu()" class="bg-gray-500 text-white py-2 rounded-xl w-full shadow-lg">回到主畫面</button>`; 
+                    } else { 
+                        message.innerText = `得分：${score}`; btns.innerHTML = `<button onclick="currentLevelIndex++; startLevel(currentLevelIndex)" class="bg-green-500 text-white py-2 rounded-xl w-full">下一關</button>`; 
+                    } 
+                } else { 
+                    icon.innerHTML = '💔'; title.innerText = "失敗"; message.innerText = config.type === 'ice' ? "冰塊未消除完畢" : `目標：${config.target}`; btns.innerHTML = `<button onclick="startLevel(currentLevelIndex)" class="bg-red-500 text-white py-2 rounded-xl w-full">重試</button><button onclick="returnToMainMenu()" class="bg-gray-500 text-white py-2 rounded-xl w-full mt-2">回到主畫面</button>`; 
+                } 
+            } 
+        }
+
+        function startTimeAttack() {
+            document.getElementById('gameOverModal').classList.add('hidden'); // Fix: Hide modal
+            closeSettings(); stopAutoWin(); isTimeMode = true; timeRemaining = 60; score = 0; moves = 999; comboCount = 0; lastMatchTime = 0;
+            iceState.fill(0); chainState.fill(0); honeyState.fill(0);
+            safeSetText('levelDisplay', '🔥'); safeSetText('targetDisplay', '最高分'); safeSetText('bestScore', timeAttackHighScore); safeSetText('score', 0);
+            safeSetText('movesLabel', '時間'); safeSetText('moves', '60');
+            document.getElementById('moves').classList.remove('text-red-500');
+            document.getElementById('star1').className = 'star-icon'; document.getElementById('star2').className = 'star-icon'; document.getElementById('star3').className = 'star-icon';
+            safeSetText('restartBtn', '🔄 重玩');
+            clearInterval(timerInterval); timerInterval = setInterval(updateTimer, 1000);
+            isProcessing = false; domSquares.forEach(function(sq) { sq.dataset.lastState = 'RESET'; });
+            reshuffleBoardLogic(); renderBoard();
+        }
+        function updateTimer() { timeRemaining--; safeSetText('moves', timeRemaining); checkUrgency(); if (timeRemaining <= 0) { clearInterval(timerInterval); finishTimeAttack(); } }
+        function finishTimeAttack() {
+            var modal = document.getElementById('gameOverModal'); var title = document.getElementById('modalTitle'); var message = document.getElementById('modalMessage'); var btns = document.getElementById('modalButtons'); var icon = document.getElementById('modalIcon');
+            modal.classList.remove('hidden');
+            var isNewRecord = false; if (score > timeAttackHighScore) { timeAttackHighScore = score; isNewRecord = true; saveProgress(); }
+            icon.innerHTML = isNewRecord ? '🏆' : '⏰'; title.innerText = isNewRecord ? "新紀錄！" : "時間到！"; message.innerText = `最終分數：${score}\n${isNewRecord ? '太強了！刷新最高分！' : ''}`;
+            btns.innerHTML = `<button onclick="startTimeAttack()" class="bg-yellow-500 text-white py-2 rounded-xl w-full shadow-lg">再挑戰一次</button><button onclick="returnToMainMenu()" class="bg-gray-500 text-white py-2 rounded-xl w-full shadow-lg">回到主畫面</button>`;
+        }
+        
+        function startLevel(index) {
+            document.getElementById('gameOverModal').classList.add('hidden'); // Fix: Hide modal at start
+            stopAutoWin(); clearInterval(timerInterval); isTimeMode = false;
+            var config = levelConfig[index] || levelConfig[0]; 
+            score = 0; moves = config.moves; hints = 3; comboCount = 0; lastMatchTime = 0;
+            iceState.fill(0); chainState.fill(0); honeyState.fill(0); 
+            
+            if (config.type === 'ice') { let placed = 0; while(placed < config.iceCount) { const r = Math.floor(Math.random() * width * width); if(iceState[r] === 0) { iceState[r] = 1; placed++; } } }
+            if (config.chainCount) { let placed = 0; while(placed < config.chainCount) { const r = Math.floor(Math.random() * width * width); if(chainState[r] === 0 && iceState[r] === 0) { chainState[r] = 1; placed++; } } }
+            if (config.honeyCount) { let placed = 0; while(placed < config.honeyCount) { const r = Math.floor(Math.random() * width * width); if(chainState[r] === 0 && iceState[r] === 0 && honeyState[r] === 0) { honeyState[r] = 1; placed++; } } }
+            safeSetText('levelDisplay', config.level);
+            var targetText = config.target; if (config.type === 'ice') targetText = `消除 ${config.iceCount} 冰塊`; safeSetText('targetDisplay', targetText);
+            safeSetText('score', score); safeSetText('movesLabel', '步數'); safeSetText('moves', moves); document.getElementById('moves').classList.add('text-red-500');
+            safeSetText('hintCount', hints); safeSetText('bestScore', highScores[index] || 0);
+            safeSetText('restartBtn', '🔄 重玩本關');
+            updateProgressBar(); updateHintButtonState(); checkUrgency(); 
+            isProcessing = false; domSquares.forEach(function(sq) { sq.dataset.lastState = 'RESET'; });
+            reshuffleBoardLogic(); renderBoard(); saveProgress();
+        }
+
+        async function checkAutoPlayLoop() { while (isAutoPlaying && (isTimeMode ? timeRemaining > 0 : moves > 0)) { if(!isTimeMode) { var cleared = isLevelCleared(); var threeStars = score >= levelConfig[currentLevelIndex].target * 2; if (cleared && threeStars) break; } if (!isProcessing) { var move = findBestMove(); if (move) await swapSquares(move[0], move[1]); else await wait(1000); } else { await wait(200); } } stopAutoWin(); }
+
+        // --- Functions bound to window ---
+        function enterNormalMode() { document.getElementById('mainMenu').classList.add('hidden'); document.getElementById('gameScreen').classList.remove('hidden'); isTimeMode=false; startLevel(currentLevelIndex); }
+        function enterTimeMode() { document.getElementById('mainMenu').classList.add('hidden'); document.getElementById('gameScreen').classList.remove('hidden'); startTimeAttack(); }
+        function returnToMainMenu() { 
+            document.getElementById('gameOverModal').classList.add('hidden'); // Fix: Hide modal
+            closeSettings(); stopAutoWin(); clearInterval(timerInterval); document.getElementById('gameScreen').classList.add('hidden'); document.getElementById('mainMenu').classList.remove('hidden'); 
+        }
+        function openSettings() { document.getElementById('settingsModal').classList.remove('hidden'); }
+        function closeSettings() { document.getElementById('settingsModal').classList.add('hidden'); }
+        function openHelp() { document.getElementById('helpModal').classList.remove('hidden'); document.getElementById('helpSimple').classList.remove('hidden'); document.getElementById('helpDetailed').classList.add('hidden'); }
+        function closeHelp() { document.getElementById('helpModal').classList.add('hidden'); }
+        function showDetailedHelp() { document.getElementById('helpSimple').classList.add('hidden'); document.getElementById('helpDetailed').classList.remove('hidden'); }
+        function hideDetailedHelp() { document.getElementById('helpSimple').classList.remove('hidden'); document.getElementById('helpDetailed').classList.add('hidden'); }
+        function handleUpload(e, id) { var file = e.target.files[0]; if(file) { var reader = new FileReader(); reader.onload = function(evt) { var char = characters.find(function(c){return c.id===id}); char.content = `<img src="${evt.target.result}" class="character-content" draggable="false">`; document.getElementById(`preview-${id}`).innerHTML = char.content; domSquares.forEach(function(sq) { sq.dataset.lastState = 'RESET'; }); renderBoard(); }; reader.readAsDataURL(file); } }
+        function handleMainMenuUpload(e) { var file = e.target.files[0]; if(file) { var reader = new FileReader(); reader.onload = function(evt) { customMainMenuImg = evt.target.result; saveProgress(); updateMainMenuImage(); }; reader.readAsDataURL(file); } }
+        function restoreDefaultMainMenuImage() { if (customMainMenuImg) { showSystemConfirm("確定要恢復預設的主畫面圖案嗎？", function() { customMainMenuImg = null; saveProgress(); updateMainMenuImage(); showSystemMessage("已恢復為預設維尼圖案！"); }); } else { showSystemMessage("目前已經是預設圖案囉！"); } }
+        
+        // Add restore function for characters
+        function restoreCharacterImage(id) {
+            var char = characters.find(function(c){return c.id===id});
+            if(char) {
+                char.content = svgs[id];
+                document.getElementById(`preview-${id}`).innerHTML = char.content;
+                domSquares.forEach(function(sq) { sq.dataset.lastState = 'RESET'; });
+                renderBoard();
+                showSystemMessage(`已恢復 ${char.name} 的預設圖案！`);
+            }
+        }
+
+        function clearSaveData() { showSystemConfirm("確定要刪除所有進度並從第一關開始嗎？", function() { localStorage.removeItem(STORAGE_KEY); location.reload(); }); }
+        function restartLevel() { stopAutoWin(); if (isTimeMode) startTimeAttack(); else startLevel(currentLevelIndex); }
+        function restartGame() { 
+            document.getElementById('gameOverModal').classList.add('hidden'); // Fix: Explicitly hide modal
+            stopAutoWin(); isTimeMode = false; currentLevelIndex = 0; startLevel(currentLevelIndex); 
+        }
+        function activateAutoWin() { if (isAutoPlaying) { stopAutoWin(); return; } if (!isTimeMode && isLevelCleared() && score >= levelConfig[currentLevelIndex].target * 2) return; isAutoPlaying = true; var btn = document.getElementById('autoWinBtn'); btn.classList.add('text-green-400', 'animate-pulse'); btn.textContent = '🛑 停止'; document.getElementById('grid').classList.add('bot-active'); checkAutoPlayLoop(); }
+        
+        function closeSystemModal() { document.getElementById('systemModal').classList.add('hidden'); systemConfirmCallback = null; }
+        function confirmSystemAction() { if(systemConfirmCallback) systemConfirmCallback(); window.closeSystemModal(); }
+        function closeHintModal() { document.getElementById('hintModal').classList.add('hidden'); }
+        function confirmUseHint() { window.closeHintModal(); var move = findBestMove(); if (move) { hints--; score -= 100; safeSetText('hintCount', hints); safeSetText('score', score); if(!isTimeMode) updateProgressBar(); domSquares[move[0]].classList.add('hint-highlight'); domSquares[move[1]].classList.add('hint-highlight'); setTimeout(function() { domSquares[move[0]].classList.remove('hint-highlight'); domSquares[move[1]].classList.remove('hint-highlight'); }, 1500); } }
+        function useHint() { if (isProcessing || hints <= 0) return; const modal = document.getElementById('hintModal'); const title = document.getElementById('hintModalTitle'); const msg = document.getElementById('hintModalMessage'); const btns = document.getElementById('hintModalButtons'); modal.classList.remove('hidden'); if (score < 100) { title.innerText = "分數不足"; msg.innerText = "需要 100 分才能使用提示功能喔！\n加油消除吧！"; btns.innerHTML = `<button onclick="closeHintModal()" class="w-full bg-gray-500 text-white font-bold py-2 px-4 rounded-xl shadow hover:bg-gray-600 transition">知道了</button>`; } else { title.innerText = "使用提示？"; msg.innerText = "這將會扣除您的 100 分。\n確定要使用嗎？"; btns.innerHTML = `<button onclick="closeHintModal()" class="bg-gray-400 text-white font-bold py-2 px-6 rounded-xl shadow hover:bg-gray-500 transition">取消</button><button onclick="confirmUseHint()" class="bg-purple-500 text-white font-bold py-2 px-6 rounded-xl shadow hover:bg-purple-600 transition">確定</button>`; } }
+        
+        // Helper functions for system messages
+        function showSystemMessage(msg) {
+            const modal = document.getElementById('systemModal');
+            document.getElementById('systemModalMessage').innerText = msg;
+            document.getElementById('systemModalButtons').innerHTML = `<button onclick="closeSystemModal()" class="bg-blue-500 text-white font-bold py-2 px-6 rounded-xl shadow hover:bg-blue-600 transition">確定</button>`;
+            modal.classList.remove('hidden');
+        }
+
+        function showSystemConfirm(msg, callback) {
+            const modal = document.getElementById('systemModal');
+            document.getElementById('systemModalMessage').innerText = msg;
+            systemConfirmCallback = callback;
+            document.getElementById('systemModalButtons').innerHTML = `
+                <button onclick="closeSystemModal()" class="bg-gray-400 text-white font-bold py-2 px-6 rounded-xl shadow hover:bg-gray-500 transition">取消</button>
+                <button onclick="confirmSystemAction()" class="bg-blue-500 text-white font-bold py-2 px-6 rounded-xl shadow hover:bg-blue-600 transition">確定</button>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        // Listeners for content
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProgress(); 
+            initDOM(); 
+            renderSettings(); 
+            updateMainMenuImage(); 
+
+            // Auto-play Music Logic
+            const bgmAudio = document.getElementById('bgmAudio');
+            bgmAudio.src = defaultBgmUrl;
+            
+            // Try to play immediately
+            bgmAudio.play().then(() => {
+                console.log("Auto-play successful");
+                // Initialize SFX context as well if allowed (unlikely but trying)
+                initAudio();
+            }).catch(e => {
+                console.log("Auto-play blocked, waiting for interaction");
+                // Fallback listeners
+                const unlockAudio = () => {
+                    bgmAudio.play();
+                    initAudio();
+                    document.removeEventListener('click', unlockAudio);
+                    document.removeEventListener('touchstart', unlockAudio);
+                };
+                document.addEventListener('click', unlockAudio);
+                document.addEventListener('touchstart', unlockAudio);
+            });
+        });
+
+    </script>
+</body>
+</html>
